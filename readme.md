@@ -1,4 +1,4 @@
-# markdown-to-book
+# book-convert
 
 A CLI tool that converts Markdown files into print-ready books for Amazon KDP. One command produces paperback PDFs, hardcover PDFs, and Kindle EPUBs with proper margins, typography, and scene breaks.
 
@@ -42,8 +42,8 @@ brew install --cask mactex
 ## Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/book-convert.git
-cd book-convert
+git clone https://github.com/vpuna/markdown-to-book.git
+cd markdown-to-book
 npm install
 ```
 
@@ -97,7 +97,7 @@ The tool is a thin orchestration layer around Pandoc:
 ## Project Structure
 
 ```
-book-convert/
+markdown-to-book/
 ├── convert.js              # CLI entry point
 ├── package.json
 ├── templates/
