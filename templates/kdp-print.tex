@@ -1,0 +1,174 @@
+%% ─────────────────────────────────────────────
+%% KDP Book Interior — Pandoc LaTeX Template
+%% Professional print-ready PDF for Amazon KDP
+%% ─────────────────────────────────────────────
+
+\documentclass[%
+  $if(fontsize)$$fontsize$$else$11pt$endif$,%
+  $if(open-right)$openright$else$openany$endif$,%
+  twoside%
+]{book}
+
+%% ──── Page Geometry ────
+\usepackage[%
+  paperwidth=$if(paperwidth)$$paperwidth$$else$6in$endif$,%
+  paperheight=$if(paperheight)$$paperheight$$else$9in$endif$,%
+  inner=$if(inner-margin)$$inner-margin$$else$0.85in$endif$,%
+  outer=$if(outer-margin)$$outer-margin$$else$0.6in$endif$,%
+  top=$if(top-margin)$$top-margin$$else$0.8in$endif$,%
+  bottom=$if(bottom-margin)$$bottom-margin$$else$0.8in$endif$,%
+  includehead,%
+  headheight=14pt%
+]{geometry}
+
+%% ──── Fonts (XeLaTeX) ────
+\usepackage{fontspec}
+\defaultfontfeatures{Ligatures=TeX}
+\IfFileExists{EBGaramond-Regular.otf}{%
+  \setmainfont{EBGaramond}[%
+    Path           = /usr/share/texlive/texmf-dist/fonts/opentype/public/ebgaramond/,%
+    Extension      = .otf,%
+    UprightFont    = *-Regular,%
+    BoldFont       = *-Bold,%
+    ItalicFont     = *-Italic,%
+    BoldItalicFont = *-BoldItalic%
+  ]%
+}{%
+  \setmainfont{Latin Modern Roman}%
+}
+\usepackage{microtype}
+
+%% ──── Line & Paragraph Spacing ────
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0pt plus 1pt}
+
+%% ──── No Chapter/Section Numbering ────
+\setcounter{secnumdepth}{-1}
+\setcounter{tocdepth}{0}
+
+%% ──── Headers & Footers ────
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\fancyhf{}
+$if(title)$
+\fancyhead[LE]{\small\itshape $title$}
+$endif$
+\fancyhead[RO]{\small\itshape\nouppercase{\leftmark}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \fancyfoot[C]{\small\thepage}%
+  \renewcommand{\headrulewidth}{0pt}%
+}
+
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+
+%% ──── Chapter Title Styling ────
+\usepackage{titlesec}
+
+\titleformat{\chapter}[block]
+  {\normalfont\LARGE\bfseries\centering}
+  {}
+  {0pt}
+  {}
+
+\titlespacing*{\chapter}{0pt}{40pt}{30pt}
+
+%% ──── Scene Breaks (--- in markdown) ────
+\makeatletter
+\newcommand{\scenebreak}{%
+  \par\vspace{1.2\baselineskip}%
+  {\centering *\enspace *\enspace *\par}%
+  \vspace{1.2\baselineskip}%
+  \@afterindentfalse\@afterheading%
+}
+\makeatother
+
+%% ──── Widow / Orphan Protection ────
+\widowpenalty=10000
+\clubpenalty=10000
+\raggedbottom
+
+%% ──── PDF Metadata & Links ────
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdfcreator={Pandoc + LaTeX via book-convert}}
+$if(title)$\hypersetup{pdftitle={$title$}}$endif$
+$if(author)$\hypersetup{pdfauthor={$author$}}$endif$
+
+%% ──── Images ────
+\usepackage{graphicx}
+
+%% ──── Tight Lists (Pandoc uses these) ────
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}%
+}
+
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+
+%% ════════════════════════
+%% BEGIN DOCUMENT
+%% ════════════════════════
+\begin{document}
+
+%% ──── Front Matter ────
+\frontmatter
+\pagestyle{empty}
+
+%% Title Page
+\begin{titlepage}
+  \centering
+  \vspace*{\stretch{2}}
+  {\Huge\bfseries $if(title)$$title$$else$\relax$endif$\par}
+  $if(subtitle)$
+  \vspace{0.5in}
+  {\Large\itshape $subtitle$\par}
+  $endif$
+  \vspace{1in}
+  $if(author)$
+  {\large $author$\par}
+  $endif$
+  \vspace*{\stretch{3}}
+\end{titlepage}
+
+%% Copyright Page
+\clearpage
+\thispagestyle{empty}
+\vspace*{\fill}
+\begin{center}
+\small
+$if(title)$\textit{$title$}\\[0.5em]$endif$
+$if(author)$Copyright \textcopyright\ $if(year)$$year$$else$\the\year$endif$\ $author$\\[0.5em]$endif$
+All rights reserved.\\[1em]
+No part of this publication may be reproduced, distributed,\\
+or transmitted in any form or by any means without the prior\\
+written permission of the author.\\[1em]
+$if(isbn)$ISBN: $isbn$\\[0.5em]$endif$
+\end{center}
+\vspace{1in}
+
+$if(toc)$
+%% Table of Contents
+\clearpage
+\pagestyle{plain}
+\tableofcontents
+\clearpage
+$endif$
+
+%% ──── Main Content ────
+\mainmatter
+\pagestyle{fancy}
+
+$body$
+
+%% ──── Back Matter ────
+\backmatter
+
+\end{document}
