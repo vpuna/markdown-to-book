@@ -1,4 +1,4 @@
-# book-convert
+# markdown-to-book
 
 A CLI tool that converts Markdown files into print-ready books for Amazon KDP. One command produces paperback PDFs, hardcover PDFs, and Kindle EPUBs with proper margins, typography, and scene breaks.
 
