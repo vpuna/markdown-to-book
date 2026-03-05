@@ -1,0 +1,15 @@
+{
+  "name": "book-convert",
+  "version": "1.0.0",
+  "description": "Convert markdown to professional KDP-ready books (PDF/EPUB) using Pandoc + LaTeX",
+  "main": "convert.js",
+  "bin": {
+    "book-convert": "./convert.js"
+  },
+  "scripts": {
+    "convert": "node convert.js"
+  },
+  "dependencies": {
+    "commander": "^13.0.0"
+  }
+}
