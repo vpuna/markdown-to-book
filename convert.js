@@ -23,7 +23,7 @@ program
   .option('-o, --output <name>',     'Output filename (extension added automatically)')
   .option('-t, --title <title>',     'Book title')
   .option('-a, --author <author>',   'Author name')
-  .option('-s, --subtitle <text>',   'Book subtitle')
+  .option('-s, --subtitle <text>',   'Book subtitle', 'Hard Science Fiction')
   .option('-f, --format <format>',   'Output format: pdf, epub, or all (paperback + hardcover + kindle)', 'all')
   .option('--trim <size>',           `Trim size: ${Object.keys(TRIM_SIZES).join(', ')}`, '5x8')
   .option('--toc',                   'Include table of contents')
@@ -32,6 +32,7 @@ program
   .option('--open-right',            'Start chapters on right-hand (odd) pages')
   .option('--year <year>',           'Copyright year', new Date().getFullYear().toString())
   .option('--isbn <isbn>',           'ISBN for copyright page')
+  .option('--back-matter <path>',     'JSON file with author info and book list for EPUB back matter')
   .addHelpText('after', `
 Examples:
   All 3 formats (paperback PDF + hardcover PDF + Kindle EPUB):
@@ -107,6 +108,111 @@ function baseName() {
     .replace(/^-|-$/g, '');
 }
 
+function buildFrontMatterHtml() {
+  const title = opts.title || '';
+  const author = opts.author || '';
+  const subtitle = opts.subtitle || '';
+  const year = opts.year || new Date().getFullYear();
+  const isbn = opts.isbn || '';
+
+  let html = '';
+
+  html += '<div class="title-page">\n';
+  html += '<div class="title-page-block">\n';
+  if (title) html += `<p class="tp-title">${title.toUpperCase()}</p>\n`;
+  html += '<hr class="tp-rule"/>\n';
+  if (subtitle) html += `<p class="tp-subtitle">${subtitle.toUpperCase()}</p>\n`;
+  if (author) html += `<p class="tp-author">${author.toUpperCase()}</p>\n`;
+  html += '</div>\n';
+  html += '</div>\n';
+
+  html += '<div class="copyright-page">\n';
+  if (title)  html += `<p><em>${title}</em></p>\n`;
+  if (author) html += `<p>Copyright \u00A9 ${year} ${author}</p>\n`;
+  html += '<p>All rights reserved.</p>\n';
+  html += '<p>No part of this publication may be reproduced, distributed,<br/>\n';
+  html += 'or transmitted in any form or by any means without the prior<br/>\n';
+  html += 'written permission of the author.</p>\n';
+  if (isbn) html += `<p class="isbn">ISBN: ${isbn}</p>\n`;
+  html += '</div>\n';
+
+  return html;
+}
+
+function loadAlsoBy() {
+  if (!opts.backMatter) return null;
+  const filePath = path.resolve(opts.backMatter);
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: --back-matter file not found — ${filePath}`);
+    process.exit(1);
+  }
+  try {
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    if (!data.amazonBaseUrls || !data.amazonBaseUrls.bookUrl || !data.amazonBaseUrls.reviewUrl) {
+      throw new Error('Missing amazonBaseUrls.bookUrl or amazonBaseUrls.reviewUrl');
+    }
+    if (!Array.isArray(data.books)) throw new Error('Missing "books" array');
+    for (const b of data.books) {
+      if (!b.title || !b.asin) throw new Error('Each book needs "title" and "asin"');
+    }
+    return data;
+  } catch (err) {
+    console.error(`Error: invalid --back-matter JSON — ${err.message}`);
+    process.exit(1);
+  }
+}
+
+function buildBackMatterHtml() {
+  const data = loadAlsoBy();
+  if (!data) return null;
+
+  const title = opts.title || '';
+  const author = (data.author && data.author.name) || opts.author || '';
+  const authorUrl = (data.author && data.author.url) || '';
+  const bookUrl = data.amazonBaseUrls.bookUrl;
+  const reviewBase = data.amazonBaseUrls.reviewUrl;
+
+  const currentBook = data.books.find(b => b.title.toLowerCase() === title.toLowerCase());
+  const reviewUrl = currentBook ? `${reviewBase}${currentBook.asin}` : '';
+  const otherBooks = data.books.filter(b => b.title.toLowerCase() !== title.toLowerCase());
+
+  if (!reviewUrl && otherBooks.length === 0) return null;
+
+  let html = '<div class="back-matter">\n';
+
+  if (title) {
+    html += `<p class="bm-title">${title.toUpperCase()}</p>\n`;
+    html += '<hr class="bm-rule"/>\n';
+  }
+
+  if (reviewUrl) {
+    html += '<p class="bm-heading">Did You Enjoy This Book?</p>\n';
+    html += '<p class="bm-body">Thank you for reading. If you enjoyed this story, ';
+    html += 'please consider leaving a ';
+    html += `<a href="${reviewUrl}">review on Amazon</a>. `;
+    html += 'Reviews help other readers discover new books ';
+    html += 'and mean a great deal to the author.</p>\n';
+  }
+
+  if (otherBooks.length > 0) {
+    const heading = author ? `More from ${author}` : 'More from This Author';
+    html += `<p class="bm-heading">${heading}</p>\n`;
+    html += '<ul class="bm-book-list">\n';
+    for (const book of otherBooks) {
+      html += `<li><a href="${bookUrl}${book.asin}">${book.title}</a></li>\n`;
+    }
+    html += '</ul>\n';
+    if (authorUrl) {
+      html += '<p class="bm-author-link">Visit the ';
+      html += `<a href="${authorUrl}">author's page on Amazon</a> `;
+      html += 'for the complete catalogue.</p>\n';
+    }
+  }
+
+  html += '</div>\n';
+  return html;
+}
+
 function buildPandocArgs(target) {
   const args = [...resolvedFiles];
 
@@ -127,8 +233,14 @@ function buildPandocArgs(target) {
     args.push('--lua-filter', sceneFilter);
   }
 
+  const headingFilter = path.join(FILTER_DIR, 'heading-promote.lua');
+  if (fs.existsSync(headingFilter)) {
+    args.push('--lua-filter', headingFilter);
+  }
+
+  if (opts.toc) args.push('--toc', '--toc-depth=1');
+
   if (target.ext === 'pdf') {
-    if (opts.toc) args.push('--toc', '--toc-depth=1');
     const template = path.join(TEMPLATE_DIR, 'kdp-print.tex');
     args.push('--template', template);
     args.push('--pdf-engine=xelatex');
@@ -146,6 +258,12 @@ function buildPandocArgs(target) {
     args.push('--epub-title-page=false');
     const css = path.join(TEMPLATE_DIR, 'epub.css');
     if (fs.existsSync(css)) args.push('--css', css);
+
+    const frontMatterHtml = buildFrontMatterHtml();
+    const frontMatterFile = path.join(os.tmpdir(), 'epub-front-matter.html');
+    fs.writeFileSync(frontMatterFile, frontMatterHtml);
+    args.push('--include-before-body', frontMatterFile);
+
     if (opts.cover) {
       const coverSrc = path.resolve(opts.cover);
       const coverExt = path.extname(coverSrc);
@@ -153,9 +271,66 @@ function buildPandocArgs(target) {
       fs.copyFileSync(coverSrc, safeCover);
       args.push('--epub-cover-image', safeCover);
     }
+
+    const backMatterHtml = buildBackMatterHtml();
+    if (backMatterHtml) {
+      const backMatterFile = path.join(os.tmpdir(), 'epub-back-matter.html');
+      fs.writeFileSync(backMatterFile, backMatterHtml);
+      args.push('--include-after-body', backMatterFile);
+    }
   }
 
   return { args, output: out };
+}
+
+function cleanupEpub(epubPath) {
+  const frontMatter = buildFrontMatterHtml();
+  const backMatter = buildBackMatterHtml();
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'epub-fix-'));
+
+  try {
+    execFileSync('unzip', ['-q', '-o', epubPath, '-d', tmpDir], { stdio: 'pipe' });
+
+    const textDir = path.join(tmpDir, 'EPUB', 'text');
+    if (!fs.existsSync(textDir)) return;
+
+    const chapterFiles = fs.readdirSync(textDir)
+      .filter(f => /^ch\d+\.xhtml$/.test(f))
+      .sort();
+    const lastChapter = chapterFiles[chapterFiles.length - 1];
+
+    for (const file of chapterFiles) {
+      const filePath = path.join(textDir, file);
+      let content = fs.readFileSync(filePath, 'utf8');
+      const originalLen = content.length;
+
+      content = content.replace(frontMatter, '');
+      if (backMatter && file !== lastChapter) {
+        content = content.replace(backMatter, '');
+      }
+
+      if (content.length !== originalLen) {
+        fs.writeFileSync(filePath, content);
+      }
+    }
+
+    const navPath = path.join(tmpDir, 'EPUB', 'nav.xhtml');
+    if (fs.existsSync(navPath)) {
+      let nav = fs.readFileSync(navPath, 'utf8');
+      const navLen = nav.length;
+      if (backMatter) nav = nav.replace(backMatter, '');
+      if (nav.length !== navLen) {
+        fs.writeFileSync(navPath, nav);
+      }
+    }
+
+    const absEpub = path.resolve(epubPath);
+    fs.unlinkSync(absEpub);
+    execFileSync('zip', ['-0', '-X', absEpub, 'mimetype'], { cwd: tmpDir, stdio: 'pipe' });
+    execFileSync('zip', ['-r', '-X', absEpub, 'META-INF', 'EPUB'], { cwd: tmpDir, stdio: 'pipe' });
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 }
 
 function run(target) {
@@ -170,6 +345,11 @@ function run(target) {
 
   try {
     execFileSync('pandoc', args, { stdio: 'pipe' });
+
+    if (target.ext === 'epub') {
+      cleanupEpub(output);
+    }
+
     const stat = fs.statSync(output);
     const sizeMB = (stat.size / (1024 * 1024)).toFixed(1);
     console.log(`  Done    ${output} (${sizeMB} MB)`);
