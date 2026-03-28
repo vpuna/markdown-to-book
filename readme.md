@@ -135,12 +135,12 @@ If the JSON is provided but the current book has no ASIN match and there are no 
     "reviewUrl": "https://www.amazon.com/review/create-review?asin="
   },
   "author": {
-    "name": "Alan Voss",
-    "url": "https://www.amazon.com/stores/author/B0GR7X6T22"
+    "name": "Author Name",
+    "url": "https://www.amazon.com/stores/author/[Author ID]"
   },
   "books": [
-    { "title": "The Pull", "asin": "B0GQ8B1SN7" },
-    { "title": "Terminator", "asin": "B0GTX5MWW5" }
+    { "title": "Book Name 1", "asin": "ASIN 1" },
+    { "title": "Book Name 2", "asin": "ASIN 2" }
   ]
 }
 ```
@@ -151,9 +151,9 @@ Required fields: `amazonBaseUrls.bookUrl`, `amazonBaseUrls.reviewUrl`, and each 
 
 ```bash
 node convert.js story.md -f epub \
-  -t "Terminator" -a "Alan Voss" \
+  -t "Book Name 2" -a "Author Name" \
   --cover cover.jpg --toc \
-  --back-matter back-matter.json
+  --back-matter back-matter-sample.json
 ```
 
 ## How It Works
