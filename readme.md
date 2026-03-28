@@ -223,8 +223,12 @@ The harbour master's office smelled like diesel and old paper.
 ```
 ## Samples from an actual published book
 
-![Main Page](samples/01-main.jpg)
-![Copyright Plage](samples/02-copyright.jpg)
+| Main Page | Copyright Page | 
+|-----------|------------|
+| ![Main Page](samples/01-main.jpg)| ![Copyright Plage](samples/02-copyright.jpg) |
+
+
+
 
 
 ## License
