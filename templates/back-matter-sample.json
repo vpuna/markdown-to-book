@@ -1,0 +1,20 @@
+{
+  "amazonBaseUrls":{
+    "bookUrl": "https://www.amazon.com/dp/",
+    "reviewUrl": "https://www.amazon.com/review/create-review?asin="
+  },
+  "author": {
+    "name": "Author Name",
+    "url": "https://www.amazon.com/stores/author/[AuthorID]"
+  },
+  "books": [
+    {
+      "title": "Book Name 1",
+      "asin": "Book ASIN 1"
+    },
+    {
+      "title": "Book Name 2",
+      "asin": "Book ASIN 2"
+    }
+  ]
+}
