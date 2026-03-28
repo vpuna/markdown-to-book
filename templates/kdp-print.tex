@@ -38,6 +38,12 @@
 }
 \usepackage{microtype}
 
+%% Loosen paragraph breaking slightly so unhyphenatable tokens (proper names,
+%% parenthetical acronyms like "(GCMs),") do not stick past the text block on
+%% narrow trim sizes. KDP rejects interiors with text outside margins.
+\emergencystretch=3em
+\tolerance=2000
+
 %% ──── Line & Paragraph Spacing ────
 \usepackage{setspace}
 \setstretch{1.15}
@@ -79,6 +85,15 @@ $endif$
   {}
 
 \titlespacing*{\chapter}{0pt}{40pt}{30pt}
+
+%% ──── Section Styling (### subsections after heading promotion) ────
+\titleformat{\section}[block]
+  {\normalfont\large\bfseries}
+  {}
+  {0pt}
+  {}
+
+\titlespacing*{\section}{0pt}{20pt}{10pt}
 
 %% ──── Scene Breaks (--- in markdown) ────
 \makeatletter
@@ -125,15 +140,17 @@ $endif$
 %% Title Page
 \begin{titlepage}
   \centering
-  \vspace*{\stretch{2}}
-  {\Huge\bfseries $if(title)$$title$$else$\relax$endif$\par}
+  \vspace*{\stretch{1}}
+  {\Huge\bfseries\MakeUppercase{$if(title)$$title$$else$\relax$endif$}\par}
+  \vspace{0.15in}
+  \rule{0.35\textwidth}{0.4pt}\par
   $if(subtitle)$
-  \vspace{0.5in}
-  {\Large\itshape $subtitle$\par}
+  \vspace{0.2in}
+  {\large\MakeUppercase{$subtitle$}\par}
   $endif$
-  \vspace{1in}
+  \vspace{0.8in}
   $if(author)$
-  {\large $author$\par}
+  {\large\bfseries\MakeUppercase{$author$}\par}
   $endif$
   \vspace*{\stretch{3}}
 \end{titlepage}
@@ -152,7 +169,8 @@ or transmitted in any form or by any means without the prior\\
 written permission of the author.\\[1em]
 $if(isbn)$ISBN: $isbn$\\[0.5em]$endif$
 \end{center}
-\vspace{1in}
+\vspace*{\fill}
+\clearpage
 
 $if(toc)$
 %% Table of Contents
